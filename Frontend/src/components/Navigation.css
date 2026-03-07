@@ -1,0 +1,98 @@
+.navigation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.nav-left,
+.nav-right {
+  pointer-events: auto;
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.breadcrumb-item:hover {
+  color: #000;
+}
+
+.breadcrumb-item.current {
+  font-weight: 500;
+  color: #000;
+}
+
+.breadcrumb-separator {
+  margin: 0 8px;
+  color: rgba(0, 0, 0, 0.3);
+  font-weight: 300;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+  transition: color 0.2s;
+  font-family: inherit;
+}
+
+.nav-button:hover:not(:disabled) {
+  color: #000;
+}
+
+.nav-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-button.zoom-out-button {
+  font-weight: 300;
+}
+
+.nav-button.back-button {
+  font-weight: 400;
+}
+
+.nav-button.undo-button.active {
+  color: #000;
+  font-weight: 500;
+}
+
+.nav-divider {
+  color: rgba(0, 0, 0, 0.2);
+  font-weight: 200;
+}
+
+.selection-count {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+}
