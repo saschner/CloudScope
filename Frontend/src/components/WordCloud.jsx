@@ -1,65 +1,82 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
-function WordCloud({ words }) {
+function WordCloud({ words, emailData = [] }) {
   const [selectedWord, setSelectedWord] = useState(null);
+  const containerWidth = 1100;
+  const containerHeight = 650;
+  const maxWords = 25;
 
-  const containerWidth = 700;
-  const containerHeight = 350;
-  
-  // A helper to check if a new word overlaps with existing ones
-  const isOverlapping = (newRect, placedRects) => {
-    return placedRects.some(rect => 
-      !(newRect.right < rect.left || newRect.left > rect.right || 
-        newRect.bottom < rect.top || newRect.top > rect.bottom)
-    );
-  };
+  const placedWords = useMemo(() => {
+    const entries = Object.entries(words).sort((a, b) => b[1] - a[1]).slice(0, maxWords);
+    if (!entries.length) return [];
 
-  const placedWords = [];
-  const placedRects = [];
+    const counts = entries.map(([, count]) => count);
+    const minCount = Math.min(...counts);
+    const maxCount = Math.max(...counts);
+    const minSize = 20;
+    const maxSize = 110;
 
-  // Sort words by count so big ones get placed first (more important!)
-  const sortedWords = Object.entries(words).sort((a, b) => b[1] - a[1]);
+    return entries.map(([word, count], index) => {
+      const t = maxCount === minCount ? 0.5 : (count - minCount) / (maxCount - minCount);
+      const fontSize = minSize + t * (maxSize - minSize);
+      const left = 20 + Math.random() * (containerWidth - 360);
+      const top = 60 + Math.random() * (containerHeight - 200);
+      return { word, count, fontSize, left, top, color: `hsl(${(index * 37) % 360}, 65%, 42%)` };
+    });
+  }, [words]);
 
-  sortedWords.forEach(([word, count]) => {
-    const fontSize = Math.min(count * 6 + 18, 55);
-    const width = word.length * (fontSize * 0.6);
-    const height = fontSize;
-
-    let left, top, attempts = 0;
-    let overlapping = true;
-
-    // Try to find a spot that doesn't overlap
-    while (overlapping && attempts < 100) {
-      left = 50 + Math.random() * (containerWidth - width - 100);
-      top = 50 + Math.random() * (containerHeight - height - 100);
-      
-      const newRect = { left, top, right: left + width, bottom: top + height };
-      overlapping = isOverlapping(newRect, placedRects);
-      
-      if (!overlapping) {
-        placedRects.push(newRect);
-        placedWords.push({ word, fontSize, left, top, color: `hsl(${Math.random() * 360}, 70%, 40%)` });
-      }
-      attempts++;
-    }
-  });
+  const drilldownItems = useMemo(() => {
+    if (!selectedWord) return [];
+    const needle = selectedWord.toLowerCase();
+    return emailData.filter((email) => {
+      const subject = (email.subject || '').toLowerCase();
+      const body = (email.body || '').toLowerCase();
+      const from = (email.from || '').toLowerCase();
+      return subject.includes(needle) || body.includes(needle) || from.includes(needle);
+    });
+  }, [selectedWord, emailData]);
 
   if (selectedWord) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <h2>Drill Down: {selectedWord}</h2>
-        <button onClick={() => setSelectedWord(null)}>Back to Cloud</button>
+      <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto' }}>
+        <h2 style={{ textAlign: 'center' }}>Drill Down: {selectedWord} ({words[selectedWord] ?? 0})</h2>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <button onClick={() => setSelectedWord(null)}>Back to Cloud</button>
+        </div>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {drilldownItems.map((email, idx) => (
+            <div key={email.id || idx} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px' }}>
+              <div style={{ fontWeight: 'bold' }}>{email.subject || '(No subject)'}</div>
+              {email.from && <div style={{ fontSize: '0.9rem', color: '#555' }}>From: {email.from}</div>}
+              {email.snippet && <div style={{ marginTop: '6px' }}>{email.snippet}</div>}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ position: 'relative', width: `${containerWidth}px`, height: `${containerHeight}px`, margin: '40px auto' }}>
+    <div style={{ position: 'relative', width: `${containerWidth}px`, height: `${containerHeight}px`, margin: '20px auto', overflow: 'hidden' }}>
       {placedWords.map((item) => (
-        <span key={item.word} onClick={() => setSelectedWord(item.word)} 
-          style={{ position: 'absolute', left: `${item.left}px`, top: `${item.top}px`, 
-            fontSize: `${item.fontSize}px`, color: item.color, cursor: 'pointer', fontWeight: 'bold' }}>
-          {item.word}
+        <span
+          key={`${item.word}-${item.count}-${item.left}-${item.top}`}
+          onClick={() => setSelectedWord(item.word)}
+          style={{
+            position: 'absolute',
+            left: `${item.left}px`,
+            top: `${item.top}px`,
+            fontSize: `${item.fontSize}px`,
+            color: item.color,
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+            lineHeight: 1,
+            opacity: 0.95
+          }}
+        >
+          {item.word} <span style={{ fontSize: '0.5em', fontWeight: 600, opacity: 0.85 }}>({item.count})</span>
         </span>
       ))}
     </div>
