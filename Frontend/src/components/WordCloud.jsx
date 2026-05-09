@@ -16,14 +16,66 @@ function WordCloud({ words, emailData = [] }) {
     const minSize = 20;
     const maxSize = 110;
 
-    return entries.map(([word, count], index) => {
-      const t = maxCount === minCount ? 0.5 : (count - minCount) / (maxCount - minCount);
-      const fontSize = minSize + t * (maxSize - minSize);
-      const left = 20 + Math.random() * (containerWidth - 360);
-      const top = 60 + Math.random() * (containerHeight - 200);
-      return { word, count, fontSize, left, top, color: `hsl(${(index * 37) % 360}, 65%, 42%)` };
-    });
-  }, [words]);
+    const placed = [];
+
+return entries.map(([word, count], index) => {
+  const t =
+    maxCount === minCount
+      ? 0.5
+      : (count - minCount) / (maxCount - minCount);
+
+  const fontSize = minSize + t * (maxSize - minSize);
+
+  const estimatedWidth = word.length * (fontSize * 0.55);
+  const estimatedHeight = fontSize;
+
+  let left;
+  let top;
+
+  let attempts = 0;
+  let overlapping = true;
+
+  while (overlapping && attempts < 40) {
+    left = 60 + Math.random() * (containerWidth - estimatedWidth - 110);
+    top = 32 + Math.random() * (containerHeight - estimatedHeight - 120);
+
+    overlapping = false;
+
+    for (const p of placed) {
+      const horizontalOverlap =
+        left < p.left + p.width &&
+        left + estimatedWidth > p.left;
+
+      const verticalOverlap =
+        top < p.top + p.height &&
+        top + estimatedHeight > p.top;
+
+      if (horizontalOverlap && verticalOverlap) {
+        overlapping = true;
+        break;
+      }
+    }
+
+    attempts++;
+  }
+
+  placed.push({
+    left,
+    top,
+    width: estimatedWidth,
+    height: estimatedHeight
+  });
+
+ return {
+    word,
+    count,
+    fontSize,
+    left,
+    top,
+    color: `hsl(${(index * 37) % 360}, 65%, 42%)`
+  };
+});
+}, [words]);
 
   const drilldownItems = useMemo(() => {
     if (!selectedWord) return [];
