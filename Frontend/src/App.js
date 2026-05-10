@@ -44,6 +44,29 @@ function buildWordCounts(emails) {
   tokens.forEach((token) => { counts[token] = (counts[token] || 0) + 1; });
   return counts;
 }
+function buildSenderCounts(emails) {
+  const counts = {};
+
+  emails.forEach((email) => {
+    let sender = email.from || '';
+
+    const match = sender.match(/^"?([^"<]+)"?\s*</);
+
+    if (match) {
+      sender = match[1].trim();
+    } else {
+      sender = sender.split('@')[0];
+    }
+
+    sender = sender.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+
+    if (sender.length > 1) {
+      counts[sender] = (counts[sender] || 0) + 1;
+    }
+  });
+
+  return counts;
+}
 
 function filterWordCounts(counts) {
   const minCount = 2;
@@ -77,7 +100,12 @@ const [loading, setLoading] = useState(false);
           fetchedEmails.push({ id: msg.id, subject, from, body, snippet: msgData.snippet || '' });
         }
 
-        const counts = filterWordCounts(buildWordCounts(fetchedEmails));
+        const counts = buildSenderCounts(fetchedEmails);
+
+
+
+
+
         setEmails(fetchedEmails);
         setRealWords(counts);
         setAuthenticated(true);
