@@ -75,10 +75,20 @@ function filterWordCounts(counts) {
 }
 
 function AppInner() {
-  const [authenticated, setAuthenticated] = useState(false);
+const [authenticated, setAuthenticated] = useState(false);
 const [realWords, setRealWords] = useState({});
 const [emails, setEmails] = useState([]);
 const [loading, setLoading] = useState(false);
+const [selectedMonth, setSelectedMonth] = useState('');
+const availableMonths = [...new Set(
+  emails.map((email) => {
+    const date = new Date(Number(email.date));
+    return date.toLocaleString('default', {
+      month: 'long',
+      year: 'numeric'
+    });
+  })
+)];
   const login = useGoogleLogin({
     flow: 'implicit',
     scope: 'https://www.googleapis.com/auth/gmail.readonly',
@@ -97,8 +107,15 @@ const [loading, setLoading] = useState(false);
           const subject = headers.find((h) => h.name === 'Subject')?.value || '';
           const from = headers.find((h) => h.name === 'From')?.value || '';
           const body = extractBestBody(msgData.payload) || msgData.snippet || '';
-          fetchedEmails.push({ id: msg.id, subject, from, body, snippet: msgData.snippet || '' });
-        }
+          fetchedEmails.push({
+  id: msg.id,
+  subject,
+  from,
+  body,
+  snippet: msgData.snippet || '',
+  date: msgData.internalDate
+});
+  }
 
         const counts = buildSenderCounts(fetchedEmails);
 
@@ -126,7 +143,28 @@ const [loading, setLoading] = useState(false);
       ) : loading ? (
         <div>Loading your inbox...</div>
       ) : (
+<>
+<div style={{ textAlign: 'center', marginBottom: '20px' }}>
+  <select
+    value={selectedMonth}
+    onChange={(e) => setSelectedMonth(e.target.value)}
+    style={{
+      padding: '10px',
+      fontSize: '16px',
+      borderRadius: '8px'
+    }}
+  >
+    <option value=''>All Months</option>
+
+    {availableMonths.map((month) => (
+      <option key={month} value={month}>
+        {month}
+      </option>
+    ))}
+  </select>
+</div>
         <WordCloud words={realWords} emailData={emails} />
+</>
       )}
     </div>
   );
