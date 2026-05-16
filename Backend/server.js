@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3002',
   credentials: true
 }));
 
@@ -29,6 +29,7 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/callback'
 );
 
+// Auth routes
 app.get('/auth/url', (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -46,11 +47,17 @@ app.get('/auth/callback', async (req, res) => {
     
     req.session.tokens = tokens;
     
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}?auth=success`);
+    req.session.save(err => {
+      if (err) {
+        console.error('Session save failed:', err);
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3002'}?auth=error`);
+      }
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+      res.redirect(`${frontendUrl}?auth=success`);
+    });
   } catch (error) {
     console.error('Auth error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?auth=error`);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3002'}?auth=error`);
   }
 });
 
@@ -71,6 +78,7 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// API routes
 app.get('/api/emails/years', requireAuth, async (req, res) => {
   try {
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -155,7 +163,6 @@ app.get('/api/emails/senders/:year', requireAuth, async (req, res) => {
       }
     }
 
-    // Limit to top 30 senders
     const sortedSenders = Object.entries(senderCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 30)
@@ -220,7 +227,8 @@ app.post('/api/emails/wordcloud', requireAuth, async (req, res) => {
 
         const subjectHeader = detail.data.payload.headers.find(h => h.name === 'Subject');
         let text = subjectHeader ? subjectHeader.value : '';
-let body = '';
+        let body = '';
+
         if (detail.data.payload.parts) {
           for (const part of detail.data.payload.parts) {
             if (part.mimeType === 'text/plain' && part.body.data) {
@@ -229,18 +237,13 @@ let body = '';
           }
         }
         
-        // If no plain text, try getting from main body
         if (!body && detail.data.payload.body.data) {
           body = Buffer.from(detail.data.payload.body.data, 'base64').toString('utf-8');
         }
 
-        // Strip HTML tags
         body = body.replace(/<[^>]*>/g, ' ');
-        // Strip HTML entities
         body = body.replace(/&[a-z]+;/gi, ' ');
-        // Strip URLs
-        body = body.replace(/https?:\/\/[^\s]+/g, ' ');
-        // Strip email addresses
+        body = body.replace(/https?:\/\/[^ \r\n]+/g, ' ');
         body = body.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, ' ');
 
         text += ' ' + body;
@@ -255,7 +258,7 @@ let body = '';
 
         const words = text
           .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, ' ')
+          .replace(/[^a-z0-9 \r\n]/g, ' ')
           .split(/\s+/)
           .filter(word => word.length > 3 && !stopWords.has(word));
 
@@ -287,44 +290,7 @@ let body = '';
   }
 });
 
-app.post('/api/emails/delete', requireAuth, async (req, res) => {
-  try {
-    const { emailIds } = req.body;
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-
-    for (const id of emailIds) {
-      await gmail.users.messages.trash({
-        userId: 'me',
-        id: id
-      });
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting emails:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/emails/untrash', requireAuth, async (req, res) => {
-  try {
-    const { emailIds } = req.body;
-    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-
-    for (const id of emailIds) {
-      await gmail.users.messages.untrash({
-        userId: 'me',
-        id: id
-      });
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error untrashing emails:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
