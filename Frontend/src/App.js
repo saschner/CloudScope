@@ -23,7 +23,7 @@ function AppInner() {
       setLoading(true);
       try {
         // Fetch available years
-        const yearsRes = await fetch(`${BACKEND_URL}/api/emails/years`, {
+        const yearsRes = await fetch(`https://cloudscope-backend.onrender/api/emails/years`, {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
         });
         const yearsData = await yearsRes.json();
@@ -42,7 +42,7 @@ function AppInner() {
     setLoading(true);
     try {
       const token = localStorage.getItem('gmail_token');
-      const response = await fetch(`${BACKEND_URL}/api/emails/wordcloud`, {
+      const response = await fetch(`https://cloudscope-backend.onrender/api/emails/wordcloud`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ function AppInner() {
     setLoading(true);
     try {
       const token = localStorage.getItem('gmail_token');
-      const response = await fetch(`${BACKEND_URL}/api/emails/senders/${year}`, {
+      const response = await fetch(`http://cloudscope-backend.onrender/api/emails/senders/${year}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
