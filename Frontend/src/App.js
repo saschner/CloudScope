@@ -23,7 +23,7 @@ function AppInner() {
       setLoading(true);
       try {
         // Fetch available years
-        const yearsRes = await fetch(`https://cloudscope-backend.onrender/api/emails/years`, {
+        const yearsRes = await fetch(`https://cloudscope-backend.onrender.com/api/emails/years`, {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
         });
         const yearsData = await yearsRes.json();
